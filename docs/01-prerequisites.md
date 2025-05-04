@@ -32,15 +32,6 @@ ID_LIKE="rhel fedora"
 VERSION_ID="9.x"
 PLATFORM_ID="platform:el9"
 PRETTY_NAME="Rocky Linux 9.x (Core)"
-ANSI_COLOR="0;32"
-LOGO="fedora-logo-icon"
-CPE_NAME="cpe:/o:rocky:rocky:9::baseos"
-HOME_URL="https://rockylinux.org/"
-BUG_REPORT_URL="https://bugs.rockylinux.org/"
-ROCKY_SUPPORT_PRODUCT="Rocky-Linux-9"
-ROCKY_SUPPORT_PRODUCT_VERSION="9.x"
-REDHAT_SUPPORT_PRODUCT="Rocky Linux"
-REDHAT_SUPPORT_PRODUCT_VERSION="9.x"
 ```
 
 Next: [Setting up the Jumpbox](02-jumpbox.md)

@@ -1,16 +1,18 @@
-version: '3.8'
-
 services:
   jumpbox:
     build: .
     container_name: jumpbox
     hostname: jumpbox
     privileged: true # Required for systemd
+    restart: unless-stopped
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd 
       # Mount the project directory for easy access to scripts/configs
       - .:/root/patroni-the-hard-way
-    command: /usr/sbin/init
+    ports:
+      - "22222:22" # SSH port
+    cap_add:
+      - SYS_ADMIN
     networks:
       patroni_net:
 
@@ -19,18 +21,21 @@ services:
     container_name: haproxy
     hostname: haproxy
     privileged: true # Required for systemd
+    restart: unless-stopped
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd
       # Mount project dir if needed for configs, though HAProxy config is usually in /etc
       - .:/root/patroni-the-hard-way
     ports:
-      - "5000:5000" # PostgreSQL frontend
+      - "5005:5005" # PostgreSQL primary
+      - "5006:5006" # PostgreSQL standby
       - "8404:8404" # HAProxy stats
+    cap_add:
+      - SYS_ADMIN
     depends_on:
       - node-0
       - node-1
       - node-2
-    command: /usr/sbin/init
     networks:
       patroni_net:
 
@@ -39,10 +44,12 @@ services:
     container_name: node-0
     hostname: node-0
     privileged: true # Required for systemd
+    restart: unless-stopped
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd
       - .:/root/patroni-the-hard-way
-    command: /usr/sbin/init
+    cap_add:
+      - SYS_ADMIN
     networks:
       patroni_net:
         # Assign static IP if needed, otherwise rely on Docker DNS
@@ -53,10 +60,12 @@ services:
     container_name: node-1
     hostname: node-1
     privileged: true # Required for systemd
+    restart: unless-stopped
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd
       - .:/root/patroni-the-hard-way
-    command: /usr/sbin/init
+    cap_add:
+      - SYS_ADMIN
     networks:
       patroni_net:
         # ipv4_address: 172.20.0.11
@@ -66,10 +75,12 @@ services:
     container_name: node-2
     hostname: node-2
     privileged: true # Required for systemd
+    restart: unless-stopped
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd
       - .:/root/patroni-the-hard-way
-    command: /usr/sbin/init
+    cap_add:
+      - SYS_ADMIN
     networks:
       patroni_net:
         # ipv4_address: 172.20.0.12
