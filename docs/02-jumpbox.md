@@ -25,7 +25,7 @@ Now that you are logged into the `jumpbox` machine as the `root` user, you will 
 ```bash
 {
   dnf update -y
-  dnf install -y install wget curl vim openssl git
+  dnf install -y wget curl-minimal vim openssl git
 }
 ```
 

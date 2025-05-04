@@ -34,9 +34,8 @@ This command builds and starts all the necessary containers (jumpbox, haproxy, n
 # Connect to jumpbox
 docker exec -it jumpbox bash
 
-# Or connect via SSH (find the container IP first)
-docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' jumpbox
-ssh root@<container-ip>  # password: password
+# Or connect via SSH
+ssh root@localhost -p 22222 # password: password
 ```
 
 After running the containers, proceed to [Setting up the Jumpbox](02-jumpbox.md) where all subsequent commands should be executed from the jumpbox container.

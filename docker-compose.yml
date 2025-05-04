@@ -8,7 +8,7 @@ services:
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd 
       # Mount the project directory for easy access to scripts/configs
-      - .:/root/patroni-the-hard-way
+#      - .:/root/patroni-the-hard-way
     ports:
       - "22222:22" # SSH port
     cap_add:
@@ -25,7 +25,7 @@ services:
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd
       # Mount project dir if needed for configs, though HAProxy config is usually in /etc
-      - .:/root/patroni-the-hard-way
+#      - .:/root/patroni-the-hard-way
     ports:
       - "5005:5005" # PostgreSQL primary
       - "5006:5006" # PostgreSQL standby
@@ -47,7 +47,7 @@ services:
     restart: unless-stopped
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd
-      - .:/root/patroni-the-hard-way
+#      - .:/root/patroni-the-hard-way
     cap_add:
       - SYS_ADMIN
     networks:
@@ -63,7 +63,7 @@ services:
     restart: unless-stopped
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd
-      - .:/root/patroni-the-hard-way
+#      - .:/root/patroni-the-hard-way
     cap_add:
       - SYS_ADMIN
     networks:
@@ -78,7 +78,7 @@ services:
     restart: unless-stopped
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw # Changed from :ro to :rw for modern systemd
-      - .:/root/patroni-the-hard-way
+#      - .:/root/patroni-the-hard-way
     cap_add:
       - SYS_ADMIN
     networks:
