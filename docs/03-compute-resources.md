@@ -19,6 +19,7 @@ cat machines.txt
 ```
 
 ```text
+XXX.XXX.XXX.XXX haproxy.patroni.local haproxy
 XXX.XXX.XXX.XXX node-0.patroni.local node-0
 XXX.XXX.XXX.XXX node-1.patroni.local node-1
 XXX.XXX.XXX.XXX node-2.patroni.local node-2
@@ -56,7 +57,7 @@ systemctl restart sshd
 
 ### Generate and Distribute SSH Keys
 
-In this section you will generate and distribute an SSH keypair to the `node-0`, `node-1`, and `node-2` machines, which will be used to run commands on those machines throughout this tutorial. Run the following commands from the `jumpbox` machine.
+In this section you will generate and distribute an SSH keypair to the `haproxy`, `node-0`, `node-1`, and `node-2` machines, which will be used to run commands on those machines throughout this tutorial. Run the following commands from the `jumpbox` machine.
 
 Generate a new SSH key:
 
@@ -90,6 +91,7 @@ done < machines.txt
 ```
 
 ```text
+haproxy
 node-0
 node-1
 node-2
@@ -97,7 +99,7 @@ node-2
 
 ## Hostnames
 
-In this section you will assign hostnames to the `node-0`, `node-1`, and `node-2` machines. The hostname will be used when executing commands from the `jumpbox` to each machine. The hostname also plays a role within the cluster, particularly for node identification in the DCS and for inter-node communication.
+In this section you will assign hostnames to the `haproxy`, `node-0`, `node-1`, and `node-2` machines. The hostname will be used when executing commands from the `jumpbox` to each machine. The hostname also plays a role within the cluster, particularly for node identification in the DCS and for inter-node communication.
 
 To configure the hostname for each machine, run the following commands on the `jumpbox`.
 
@@ -121,6 +123,7 @@ done < machines.txt
 ```
 
 ```text
+haproxy.patroni.local
 node-0.patroni.local
 node-1.patroni.local
 node-2.patroni.local
@@ -128,7 +131,7 @@ node-2.patroni.local
 
 ## Host Lookup Table
 
-In this section you will generate a `hosts` file which will be appended to `/etc/hosts` file on the `jumpbox` and to the `/etc/hosts` files on all three cluster members used for this tutorial. This will allow each machine to be reachable using a hostname such as `node-0`, `node-1`, or `node-2`.
+In this section you will generate a `hosts` file which will be appended to `/etc/hosts` file on the `jumpbox` and to the `/etc/hosts` files on all three cluster members used for this tutorial. This will allow each machine to be reachable using a hostname such as `haproxy`, `node-0`, `node-1`, or `node-2`.
 
 Create a new `hosts` file and add a header to identify the machines being added:
 
@@ -155,6 +158,7 @@ cat hosts
 ```text
 
 # Patroni The Hard Way
+XXX.XXX.XXX.XXX haproxy.patroni.local haproxy
 XXX.XXX.XXX.XXX node-0.patroni.local node-0
 XXX.XXX.XXX.XXX node-1.patroni.local node-1
 XXX.XXX.XXX.XXX node-2.patroni.local node-2
@@ -186,6 +190,7 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 
 # Patroni The Hard Way
+XXX.XXX.XXX.XXX haproxy.patroni.local haproxy
 XXX.XXX.XXX.XXX node-0.patroni.local node-0
 XXX.XXX.XXX.XXX node-1.patroni.local node-1
 XXX.XXX.XXX.XXX node-2.patroni.local node-2
@@ -200,6 +205,7 @@ done
 ```
 
 ```text
+haproxy
 node-0
 node-1
 node-2
@@ -219,6 +225,6 @@ while read IP FQDN HOST; do
 done < machines.txt
 ```
 
-At this point, hostnames can be used when connecting to machines from your `jumpbox` machine, or any of the three machines in the Patroni cluster. Instead of using IP addresses you can now connect to machines using a hostname such as `node-0`, `node-1`, or `node-2`.
+At this point, hostnames can be used when connecting to machines from your `jumpbox` machine, or any of the three machines in the Patroni cluster. Instead of using IP addresses you can now connect to machines using a hostname such as `haproxy`, `node-0`, `node-1`, or `node-2`.
 
 Next: [Setting up the Distributed Configuration Store (etcd)](04-setting-up-dcs.md)

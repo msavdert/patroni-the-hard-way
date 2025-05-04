@@ -10,6 +10,12 @@ Log in to the `jumpbox`:
 ssh root@jumpbox
 ```
 
+If you are using docker
+
+```bash
+ssh root@localhost -p 22222
+```
+
 All commands will be run as the `root` user. This is being done for the sake of convenience, and will help reduce the number of commands required to set everything up.
 
 ### Install Command Line Utilities
@@ -18,8 +24,8 @@ Now that you are logged into the `jumpbox` machine as the `root` user, you will 
 
 ```bash
 {
-  apt-get update
-  apt-get -y install wget curl vim openssl git
+  dnf update -y
+  dnf install -y install wget curl vim openssl git
 }
 ```
 
