@@ -199,7 +199,7 @@ XXX.XXX.XXX.XXX node-2.patroni.local node-2
 At this point you should be able to SSH to each machine listed in the `machines.txt` file using a hostname.
 
 ```bash
-for host in node-0 node-1 node-2
+for host in haproxy node-0 node-1 node-2
    do ssh root@${host} hostname
 done
 ```
