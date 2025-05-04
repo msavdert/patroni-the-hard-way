@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  jumpbox:
+    build: .
+    container_name: jumpbox
+    hostname: jumpbox
+    privileged: true # Required for systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      # Mount the project directory for easy access to scripts/configs
+      - .:/root/patroni-the-hard-way
+    command: /usr/sbin/init
+    networks:
+      patroni_net:
+
+  haproxy:
+    build: .
+    container_name: haproxy
+    hostname: haproxy
+    privileged: true # Required for systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      # Mount project dir if needed for configs, though HAProxy config is usually in /etc
+      - .:/root/patroni-the-hard-way
+    ports:
+      - "5000:5000" # PostgreSQL frontend
+      - "8404:8404" # HAProxy stats
+    depends_on:
+      - node-0
+      - node-1
+      - node-2
+    command: /usr/sbin/init
+    networks:
+      patroni_net:
+
+  node-0:
+    build: .
+    container_name: node-0
+    hostname: node-0
+    privileged: true # Required for systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - .:/root/patroni-the-hard-way
+    command: /usr/sbin/init
+    networks:
+      patroni_net:
+        # Assign static IP if needed, otherwise rely on Docker DNS
+        # ipv4_address: 172.20.0.10
+
+  node-1:
+    build: .
+    container_name: node-1
+    hostname: node-1
+    privileged: true # Required for systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - .:/root/patroni-the-hard-way
+    command: /usr/sbin/init
+    networks:
+      patroni_net:
+        # ipv4_address: 172.20.0.11
+
+  node-2:
+    build: .
+    container_name: node-2
+    hostname: node-2
+    privileged: true # Required for systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - .:/root/patroni-the-hard-way
+    command: /usr/sbin/init
+    networks:
+      patroni_net:
+        # ipv4_address: 172.20.0.12
+
+networks:
+  patroni_net:
+    driver: bridge
+    # Define subnet if static IPs are used
+    # ipam:
+    #   config:
+    #     - subnet: 172.20.0.0/16
