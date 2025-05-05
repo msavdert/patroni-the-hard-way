@@ -19,13 +19,11 @@ cat machines.txt
 ```
 
 ```text
-XXX.XXX.XXX.XXX jumpbox.patroni.local jumpbox
 XXX.XXX.XXX.XXX db1.patroni.local db1
 XXX.XXX.XXX.XXX db2.patroni.local db2
 XXX.XXX.XXX.XXX db3.patroni.local db3
 XXX.XXX.XXX.XXX proxy1.patroni.local proxy1
 XXX.XXX.XXX.XXX proxy2.patroni.local proxy2
-XXX.XXX.XXX.XXX vip.patroni.local vip
 ```
 
 Now it's your turn to create a `machines.txt` file with the details for the machines you will be using to create your Patroni cluster. Use the example machine database from above and add the details for your machines.
@@ -98,7 +96,6 @@ done < machines.txt
 ```
 
 ```text
-jumpbox
 db1
 db2
 db3
@@ -115,28 +112,23 @@ To configure the hostname for each machine, run the following commands on the `j
 Set the hostname on each machine listed in the `machines.txt` file:
 
 ```bash
-while read IP FQDN HOST; do
-    if [ "$HOST" != "vip" ]; then
-        CMD="sed -i 's/^127.0.1.1.*/127.0.1.1\t${FQDN} ${HOST}/' /etc/hosts"
-        ssh -n root@${IP} "$CMD"
-        ssh -n root@${IP} hostnamectl set-hostname ${HOST}
-        ssh -n root@${IP} systemctl restart systemd-hostnamed
-    fi
+while read IP FQDN HOST SUBNET; do
+    CMD="sed -i 's/^127.0.1.1.*/127.0.1.1\t${FQDN} ${HOST}/' /etc/hosts"
+    ssh -n root@${IP} "$CMD"
+    ssh -n root@${IP} hostnamectl set-hostname ${HOST}
+    ssh -n root@${IP} systemctl restart systemd-hostnamed
 done < machines.txt
 ```
 
 Verify the hostname is set on each machine:
 
 ```bash
-while read IP FQDN HOST; do
-    if [ "$HOST" != "vip" ]; then
-        ssh -n root@${IP} hostname --fqdn
-    fi
+while read IP FQDN HOST SUBNET; do
+  ssh -n root@${IP} hostname --fqdn
 done < machines.txt
 ```
 
 ```text
-jumpbox.patroni.local
 db1.patroni.local
 db2.patroni.local
 db3.patroni.local
@@ -173,13 +165,11 @@ cat hosts
 ```text
 
 # Patroni The Hard Way
-XXX.XXX.XXX.XXX jumpbox.patroni.local jumpbox
 XXX.XXX.XXX.XXX db1.patroni.local db1
 XXX.XXX.XXX.XXX db2.patroni.local db2
 XXX.XXX.XXX.XXX db3.patroni.local db3
 XXX.XXX.XXX.XXX proxy1.patroni.local proxy1
 XXX.XXX.XXX.XXX proxy2.patroni.local proxy2
-XXX.XXX.XXX.XXX vip.patroni.local vip
 ```
 
 ## Adding `/etc/hosts` Entries To A Local Machine
@@ -240,15 +230,13 @@ In this section you will append the host entries from `hosts` to `/etc/hosts` on
 Copy the `hosts` file to each machine and append the contents to `/etc/hosts`:
 
 ```bash
-while read IP FQDN HOST; do
-  if [ "$HOST" != "vip" ]; then
-    scp hosts root@${HOST}:~/
-    ssh -n \
-      root@${HOST} "cat hosts >> /etc/hosts"
-  fi
+while read IP FQDN HOST SUBNET; do
+  scp hosts root@${HOST}:~/
+  ssh -n \
+    root@${HOST} "cat hosts >> /etc/hosts"
 done < machines.txt
 ```
 
 At this point, hostnames can be used when connecting to machines from your `jumpbox` machine, or any of the machines in the Patroni cluster. Instead of using IP addresses you can now connect to machines using a hostname such as `db1`, `db2`, `db3`, `proxy1`, or `proxy2`.
 
-Next: [Setting up the Distributed Configuration Store (etcd)](04-setting-up-dcs.md)
+Next: [Setting up the Distributed Configuration Store (consul)](04-setting-up-dcs.md)
