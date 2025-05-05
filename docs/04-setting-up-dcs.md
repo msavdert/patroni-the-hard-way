@@ -1,31 +1,24 @@
 # Setting up the Distributed Configuration Store (Consul)
 
-In this lab you will provision a Distributed Configuration Store (DCS) using Consul. Patroni relies on a DCS like Consul for leader election, storing cluster configuration, and maintaining the cluster state. We will set up a 3-node Consul cluster, co-located on the same machines that will run PostgreSQL and Patroni (db1, db2, db3).
+In this lab, you will provision a Distributed Configuration Store (DCS) using Consul. Patroni relies on a DCS like Consul for leader election, storing cluster configuration, and maintaining cluster state. We will set up a 3-node Consul cluster, co-located on the same machines that will run PostgreSQL and Patroni (db1, db2, db3).
 
-The commands in this section should be run from the `jumpbox`.
+All commands in this section should be run from the `jumpbox`.
 
-## Download and Install Consul
+## Download and Install Consul (Automated)
 
-Download the Consul binary and distribute it to each database node:
+The following commands will automatically install the Consul binary on db1, db2, and db3:
 
 ```bash
-CONSUL_VERSION=1.20.4 # Use the latest stable version if available
-ARCH=$(dpkg --print-architecture)
-DOWNLOAD_URL=https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_${ARCH}.zip
-
-wget -q --show-progress -O consul.zip $DOWNLOAD_URL
-unzip consul.zip
-chmod +x consul
-
 for host in db1 db2 db3; do
-  scp consul root@${host}:/usr/local/bin/
-  ssh root@${host} "mkdir -p /etc/consul.d /var/lib/consul"
+  ssh root@$host "wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list && \
+    sudo apt update && sudo apt install -y consul"
 done
 ```
 
 ## Create Consul Configuration
 
-Create a Consul configuration file for each node. Each node will be a server in the Consul cluster.
+Create the Consul configuration file for each node as follows:
 
 ```bash
 for host in db1 db2 db3; do
@@ -44,7 +37,6 @@ retry_join = [
 ]
 ui = true
 EOF
-
 done
 ```
 
@@ -86,7 +78,7 @@ done
 
 ## Verify the Consul Cluster
 
-Check the status of the Consul service on each node:
+Check the status of the Consul service and verify cluster membership on each node:
 
 ```bash
 for host in db1 db2 db3; do
