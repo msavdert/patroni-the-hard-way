@@ -4,7 +4,7 @@ In this lab you will review the machine requirements necessary to follow this tu
 
 ## Virtual or Physical Machines
 
-This tutorial requires at least five (5) virtual/physical machines running **Rocky Linux 9** or a similar Linux distribution. The following table lists the recommended minimum setup:
+This tutorial requires at least five (5) virtual/physical machines running **Ubuntu 24.04** or a similar Linux distribution. The following table lists the recommended minimum setup:
 
 | Name    | Description                                  | CPU | RAM   | Storage |
 |---------|----------------------------------------------|-----|-------|---------|
@@ -25,13 +25,18 @@ cat /etc/os-release
 You should see something similar to the following output:
 
 ```text
-NAME="Rocky Linux"
-VERSION="9.x (Core)"
-ID="rocky"
-ID_LIKE="rhel fedora"
-VERSION_ID="9.x"
-PLATFORM_ID="platform:el9"
-PRETTY_NAME="Rocky Linux 9.x (Core)"
+PRETTY_NAME="Ubuntu 24.04 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04 (Noble Numbat)"
+VERSION_CODENAME=noble
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=noble
 ```
 
 Next: [Setting up the Jumpbox](02-jumpbox.md)

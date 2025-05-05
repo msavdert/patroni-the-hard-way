@@ -4,15 +4,30 @@ In this lab, you will install PostgreSQL server packages on each cluster node (`
 
 Commands in this section should be run from the `jumpbox`.
 
+## Add PostgreSQL Repository
+
+First, add the official PostgreSQL repository to ensure you get the latest version. Ubuntu 24.04 may come with an older version by default:
+
+```bash
+for host in node-0 node-1 node-2; do
+  # Install prerequisites
+  ssh root@${host} "apt-get update && apt-get install -y curl ca-certificates gnupg lsb-release"
+  
+  # Add PostgreSQL repository
+  ssh root@${host} "curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg"
+  ssh root@${host} "echo \"deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list"
+  ssh root@${host} "apt-get update"
+done
+```
+
 ## Install PostgreSQL Packages
 
-Install the PostgreSQL server and client packages on all three nodes. Adjust the version (e.g., `postgresql-16`) as needed for your desired PostgreSQL version.
+Install the PostgreSQL server and client packages on all three nodes:
 
 ```bash
 PG_VERSION=16 # Specify desired PostgreSQL major version
 for host in node-0 node-1 node-2; do
-  ssh root@${host} apt-get update
-  ssh root@${host} apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION}
+  ssh root@${host} apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} postgresql-contrib-${PG_VERSION}
 done
 ```
 
@@ -22,8 +37,8 @@ Patroni needs to control the PostgreSQL process. Stop and disable the default `p
 
 ```bash
 for host in node-0 node-1 node-2; do
-  ssh root@${host} systemctl stop postgresql
-  ssh root@${host} systemctl disable postgresql
+  ssh root@${host} "systemctl stop postgresql"
+  ssh root@${host} "systemctl disable postgresql"
 done
 ```
 
@@ -31,8 +46,8 @@ Verify the service is stopped and disabled:
 
 ```bash
 for host in node-0 node-1 node-2; do
-  ssh root@${host} systemctl is-active postgresql
-  ssh root@${host} systemctl is-enabled postgresql
+  ssh root@${host} "systemctl is-active postgresql"
+  ssh root@${host} "systemctl is-enabled postgresql"
 done
 ```
 

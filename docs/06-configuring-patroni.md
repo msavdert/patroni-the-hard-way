@@ -11,13 +11,11 @@ Install Patroni using `pip` along with necessary Python libraries for PostgreSQL
 ```bash
 for host in node-0 node-1 node-2; do
   # Install pip and build dependencies
-  ssh root@${host} apt-get update
-  ssh root@${host} apt-get install -y python3-pip python3-dev build-essential libpq-dev
+  ssh root@${host} "apt-get update"
+  ssh root@${host} "apt-get install -y python3-pip python3-dev python3-venv build-essential libpq-dev python3-setuptools"
 
   # Install Patroni and required libraries
-  # psycopg2-binary might be used for simplicity, but building psycopg2 is often preferred
-  # Use etcd3gw for etcd v3 API with gRPC-gateway
-  ssh root@${host} pip install patroni[etcd3] psycopg2
+  ssh root@${host} "pip install wheel patroni[etcd3] psycopg[binary]"
 done
 ```
 
@@ -33,7 +31,7 @@ Patroni uses a YAML configuration file. We will create a template and then gener
 Create the directory for Patroni configuration on each node:
 ```bash
 for host in node-0 node-1 node-2; do
-  ssh root@${host} mkdir -p /etc/patroni
+  ssh root@${host} "mkdir -p /etc/patroni"
 done
 ```
 
@@ -43,6 +41,12 @@ We will use the etcd certificates generated in the previous step for secure comm
 
 ```bash
 PG_VERSION=16 # Ensure this matches the installed PostgreSQL version
+
+# Get node IPs for etcd connection
+NODE0_IP=$(grep node-0 machines.txt | cut -d' ' -f1)
+NODE1_IP=$(grep node-1 machines.txt | cut -d' ' -f1)
+NODE2_IP=$(grep node-2 machines.txt | cut -d' ' -f1)
+
 while read IP FQDN HOST; do
 
 # Note: Adjust user/password/database names as desired.
@@ -120,9 +124,7 @@ EOF
   # Set permissions (adjust if running Patroni as non-root)
   ssh root@${HOST} "chown -R root:root /etc/patroni && chmod 600 /etc/patroni/patroni.yml"
 
-done < <(paste machines.txt <(echo $NODE0_IP; echo $NODE1_IP; echo $NODE2_IP))
-# Note: The paste command assumes machines.txt and the IPs are in the same order.
-# A more robust script might fetch IPs inside the loop.
+done < machines.txt
 ```
 
 **Important Security Note:** The passwords in the configuration file are in plain text. In a production environment, consider using environment variables or a secrets management system to handle sensitive credentials.
@@ -159,8 +161,8 @@ Reload the systemd daemon and enable the Patroni service so it starts on boot. *
 
 ```bash
 for host in node-0 node-1 node-2; do
-  ssh root@${host} systemctl daemon-reload
-  ssh root@${host} systemctl enable patroni
+  ssh root@${host} "systemctl daemon-reload"
+  ssh root@${host} "systemctl enable patroni"
 done
 ```
 
