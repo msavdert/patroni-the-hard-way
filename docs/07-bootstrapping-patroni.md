@@ -1,98 +1,44 @@
 # Bootstrapping the Patroni Cluster
 
-In this lab, you will start the Patroni service on each node. Patroni will then use the configuration provided to connect to etcd, elect a leader, and initialize the PostgreSQL cluster (on the leader node) or set up replicas (on follower nodes).
+In this section, you will start the Patroni service on all database nodes (`db1`, `db2`, `db3`) to bootstrap the PostgreSQL high-availability cluster using Consul as the distributed configuration store.
 
-Commands in this section should be run from the `jumpbox`.
+## 1. Start Patroni on All Database Nodes
 
-## Start Patroni Service
-
-It's generally recommended to start Patroni on one node first. This node will attempt to acquire the leader lock in etcd and initialize the PostgreSQL cluster (run `initdb`). Once the first node is up and running as the leader, you can start Patroni on the remaining nodes. These nodes will detect the existing cluster in etcd and configure themselves as replicas, bootstrapping from the leader.
-
-Start Patroni on `node-0`:
+Run the following commands from the `jumpbox` to start Patroni on each database node:
 
 ```bash
-ssh root@node-0 systemctl start patroni
+for host in db1 db2 db3; do
+  ssh root@${host} "systemctl start patroni"
+done
 ```
 
-Wait a minute or two for the service to start and potentially initialize the database cluster. You can monitor the logs on `node-0` to see the progress:
+## 2. Check Patroni and PostgreSQL Status
+
+Verify that Patroni and PostgreSQL are running and healthy on all nodes:
 
 ```bash
-ssh root@node-0 journalctl -u patroni -f
+for host in db1 db2 db3; do
+  echo "Checking Patroni status on $host"
+  ssh root@${host} "systemctl status patroni --no-pager | grep Active"
+  echo "Checking PostgreSQL status on $host"
+  ssh root@${host} "systemctl status postgresql --no-pager | grep Active"
+done
 ```
 
-Look for messages indicating successful initialization and acquiring the leader lock.
+You should see `active (running)` for both Patroni and PostgreSQL services on each node.
 
-Once `node-0` is running as the leader, start Patroni on the other nodes:
+## 3. Verify Cluster State
+
+Check the cluster state using Patroni's REST API. You can run this from the `jumpbox`:
 
 ```bash
-ssh root@node-1 systemctl start patroni
-ssh root@node-2 systemctl start patroni
+curl http://db1:8008/cluster
 ```
 
-Monitor the logs on `node-1` and `node-2` to see them join the cluster as replicas:
+You should see JSON output showing the cluster members and their roles (one leader, two replicas).
 
-```bash
-ssh root@node-1 journalctl -u patroni -f
-# Look for messages about starting replication
-```
+## 4. Next Steps
 
-```bash
-ssh root@node-2 journalctl -u patroni -f
-# Look for messages about starting replication
-```
+Your Patroni cluster is now bootstrapped and running with Consul as the DCS. Continue with client access configuration in the next section.
 
-## Verify Cluster Status
-
-Patroni provides a command-line tool, `patronictl`, to interact with the cluster. You need to point `patronictl` to your Patroni configuration file.
-
-Install `patronictl` on the `jumpbox` (if you haven't already installed Patroni there) or run it from one of the cluster nodes.
-
-Install on `jumpbox` (requires pip and dependencies):
-```bash
-# Ensure pip and dev tools are installed on jumpbox first
-# apt-get update && apt-get install -y python3-pip python3-dev build-essential libpq-dev
-pip install patroni[etcd3]
-```
-
-Create a minimal `patronictl.yml` configuration on the `jumpbox` to connect to etcd:
-
-```bash
-NODE0_IP=$(grep node-0 machines.txt | cut -d' ' -f1)
-NODE1_IP=$(grep node-1 machines.txt | cut -d' ' -f1)
-NODE2_IP=$(grep node-2 machines.txt | cut -d' ' -f1)
-
-cat << EOF > patronictl.yml
-etcd:
-  hosts:
-    - ${NODE0_IP}:2379
-    - ${NODE1_IP}:2379
-    - ${NODE2_IP}:2379
-  protocol: https
-  cacert: ca.crt
-  # Use one of the node certs for client auth with patronictl
-  cert: node-0-etcd.crt
-  key: node-0-etcd.key
-EOF
-```
-
-Now, use `patronictl` to view the cluster status:
-
-```bash
-patronictl -c patronictl.yml list patroni-cluster
-```
-
-You should see output similar to this, showing one leader and two replicas:
-
-```text
-+ Cluster: patroni-cluster (XXXXXXXXXXXXXX) ----+----+-----------+--------+---------+
-| Member | Host   | Role    | State   | TL | Lag in MB |
-+--------+--------+---------+---------+----+-----------+
-| node-0 | node-0 | Leader  | running | 1  |           |
-| node-1 | node-1 | Replica | running | 1  |         0 |
-| node-2 | node-2 | Replica | running | 1  |         0 |
-+--------+--------+---------+---------+----+-----------+
-```
-
-If all nodes show as `running` and one has the `Leader` role, the cluster has been successfully bootstrapped.
-
-Next: [Configuring Client Access (HAProxy)](08-configuring-client-access.md)
+Next: [Configuring Client Access](08-configuring-client-access.md)

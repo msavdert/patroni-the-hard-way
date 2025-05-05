@@ -239,4 +239,27 @@ done < machines.txt
 
 At this point, hostnames can be used when connecting to machines from your `jumpbox` machine, or any of the machines in the Patroni cluster. Instead of using IP addresses you can now connect to machines using a hostname such as `db1`, `db2`, `db3`, `proxy1`, or `proxy2`.
 
+## Ensuring Time Synchronization with chrony
+
+Accurate time synchronization is critical for distributed systems. In this section, you will install and start the chrony service on all database and proxy nodes to ensure system clocks remain in sync.
+
+Run the following commands from the `jumpbox` to install, enable, and start chrony on all db1, db2, db3, proxy1, and proxy2 nodes:
+
+```bash
+while read IP FQDN HOST SUBNET; do
+  ssh -n \
+    root@${HOST} "apt-get update && apt-get install -y chrony && systemctl enable chrony && systemctl start chrony"
+done < machines.txt
+```
+
+Verify that chrony is running on all nodes:
+
+```bash
+while read IP FQDN HOST SUBNET; do
+  ssh -n \
+    root@${HOST} "systemctl status chrony --no-pager | grep Active"
+    echo "Checked chrony on $host"
+done < machines.txt
+```
+
 Next: [Setting up the Distributed Configuration Store (consul)](04-setting-up-dcs.md)

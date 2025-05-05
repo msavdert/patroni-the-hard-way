@@ -1,21 +1,21 @@
 # Installing and Configuring Patroni
 
-In this lab, you will install Patroni and its dependencies on each database node (`db1`, `db2`, `db3`) and configure it to manage the PostgreSQL instances using the etcd cluster set up previously.
+In this lab, you will install Patroni and its dependencies on each database node (`db1`, `db2`, `db3`) and configure it to manage the PostgreSQL instances using the Consul cluster set up previously.
 
 Commands in this section should be run from the `jumpbox`.
 
 ## Install Patroni and Dependencies
 
-Install Patroni using `pip` along with necessary Python libraries for PostgreSQL and etcd interaction.
+Install Patroni using `pip` along with necessary Python libraries for PostgreSQL and Consul interaction.
 
 ```bash
 for host in db1 db2 db3; do
   # Install pip and build dependencies
   ssh root@${host} "apt-get update"
-  ssh root@${host} "apt-get install -y python3-pip python3-dev python3-venv build-essential libpq-dev python3-setuptools"
+  ssh root@${host} "apt-get install -y python3-pip python3-dev python3-psycopg2 libpq-dev"
 
   # Install Patroni and required libraries
-  ssh root@${host} "pip install wheel patroni[etcd3] psycopg[binary]"
+  ssh root@${host} "pip3 install patroni[consul] --break-system-packages"
 done
 ```
 
@@ -35,29 +35,22 @@ for host in db1 db2 db3; do
 done
 ```
 
-Now, create the configuration file (`/etc/patroni/patroni.yml`) on each node. This file tells Patroni how to connect to etcd, manage PostgreSQL, and expose its own API.
-
-We will use the etcd certificates generated in the previous step for secure communication.
+Now, create the configuration file (`/etc/patroni/patroni.yml`) on each node. This file tells Patroni how to connect to Consul, manage PostgreSQL, and expose its own API.
 
 ```bash
-PG_VERSION=16 # Ensure this matches the installed PostgreSQL version
+PG_VERSION=17 # Ensure this matches the installed PostgreSQL version
 
-# Get node IPs for etcd connection
+# Get node IPs for Consul connection
 DB1_IP=$(grep db1 machines.txt | cut -d' ' -f1)
 DB2_IP=$(grep db2 machines.txt | cut -d' ' -f1)
 DB3_IP=$(grep db3 machines.txt | cut -d' ' -f1)
 
-# We'll create configuration only for database nodes
 for host in db1 db2 db3; do
   IP=$(grep ${host} machines.txt | cut -d' ' -f1)
 
-# Note: Adjust user/password/database names as desired.
-# Patroni needs superuser access initially to bootstrap.
-# The replication user will be created by Patroni during bootstrap.
-
 cat << EOF | ssh root@${host} "cat > /etc/patroni/patroni.yml"
 scope: patroni-cluster # Name of the cluster
-namespace: /patroni/    # Base path in etcd
+namespace: /patroni/    # Base path in Consul
 
 name: ${host}          # Unique name for this node
 
@@ -65,15 +58,12 @@ restapi:
   listen: ${IP}:8008
   connect_address: ${IP}:8008
 
-etcd:
-  hosts:
-    - ${DB1_IP}:2379
-    - ${DB2_IP}:2379
-    - ${DB3_IP}:2379
-  protocol: https
-  cacert: /etc/etcd/ca.crt
-  cert: /etc/etcd/${host}-etcd.crt # Reuse etcd node cert for client auth
-  key: /etc/etcd/${host}-etcd.key
+consul:
+  host: 127.0.0.1
+  port: 8500
+  register_service: true
+  protocol: http
+  # token: <your-consul-acl-token> # Uncomment and set if using Consul ACLs
 
 bootstrap:
   dcs:
@@ -85,17 +75,13 @@ bootstrap:
       use_pg_rewind: true
       use_slots: true
       parameters:
-        # Standard PostgreSQL parameters
         max_connections: 100
         shared_buffers: 256MB
         wal_level: replica
-        # Add other parameters as needed
   initdb:
     - encoding: UTF8
     - locale: en_US.UTF-8
     - data-checksums
-  # Define users Patroni should create during initdb
-  # The replication user MUST have the REPLICATION attribute.
   users:
     admin:
       password: StrongAdminPassword
@@ -110,22 +96,19 @@ bootstrap:
 postgresql:
   listen: ${IP}:5432
   connect_address: ${IP}:5432
-  data_dir: /var/lib/postgresql/${PG_VERSION}/main # Must match PG installation
-  bin_dir: /usr/lib/postgresql/${PG_VERSION}/bin # Must match PG installation
-  pgpass: /tmp/pgpass${host} # Patroni manages this file
+  data_dir: /var/lib/postgresql/${PG_VERSION}/main
+  bin_dir: /usr/lib/postgresql/${PG_VERSION}/bin
+  pgpass: /tmp/pgpass${host}
   authentication:
     replication:
       username: replicator
       password: StrongReplicationPassword
     superuser:
-      username: admin # Should match a user defined in bootstrap.users
+      username: admin
       password: StrongAdminPassword
-  # Callbacks can be added here if needed
 EOF
 
-  # Set permissions (adjust if running Patroni as non-root)
   ssh root@${host} "chown -R root:root /etc/patroni && chmod 600 /etc/patroni/patroni.yml"
-
 done
 ```
 
@@ -140,8 +123,8 @@ for host in db1 db2 db3; do
 cat << EOF | ssh root@${host} "cat > /etc/systemd/system/patroni.service"
 [Unit]
 Description=Patroni PostgreSQL High-Availability Manager
-After=network.target etcd.service
-Requires=etcd.service
+After=network.target consul.service
+Requires=consul.service
 
 [Service]
 User=root # Or a dedicated 'patroni' user if created

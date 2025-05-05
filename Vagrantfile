@@ -9,6 +9,9 @@ Vagrant.configure("2") do |config|
 
   # Provisioning script to install SSH, enable root login, and set root password
   config.vm.provision "shell", inline: <<-SHELL
+
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+
     # Install SSH service
     apt-get update
     apt-get install -y openssh-server

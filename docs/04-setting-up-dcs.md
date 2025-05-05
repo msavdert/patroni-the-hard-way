@@ -37,30 +37,10 @@ retry_join = [
 ]
 ui = true
 EOF
-done
-```
 
-## Create Consul Systemd Service
+ssh root@${host} "mkdir -p /var/lib/consul && \
+chown -R consul:consul /var/lib/consul"
 
-Create a systemd unit file to manage the Consul service:
-
-```bash
-for host in db1 db2 db3; do
-cat << EOF | ssh root@${host} "cat > /etc/systemd/system/consul.service"
-[Unit]
-Description=Consul Agent
-After=network.target
-
-[Service]
-User=root
-Group=root
-ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul.d
-Restart=on-failure
-LimitNOFILE=65536
-
-[Install]
-WantedBy=multi-user.target
-EOF
 done
 ```
 
@@ -82,7 +62,7 @@ Check the status of the Consul service and verify cluster membership on each nod
 
 ```bash
 for host in db1 db2 db3; do
-  ssh root@${host} systemctl status consul --no-pager
+  ssh root@${host} systemctl status consul --no-pager | grep "Active"
   ssh root@${host} consul members
   ssh root@${host} consul operator raft list-peers
   # You should see all three nodes as members and peers
