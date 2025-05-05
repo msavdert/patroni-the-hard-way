@@ -30,14 +30,14 @@ Component versions:
 
 The following table outlines the full cluster topology that will be built in this tutorial:
 
-| Hostname | IP Address | Roles | Installed Components | Ports |
-|----------|------------|-------|---------------------|-------|
-| db1 | 10.0.0.11 | PostgreSQL node<br>Patroni node<br>Consul server | PostgreSQL<br>Patroni<br>Consul | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
-| db2 | 10.0.0.12 | PostgreSQL node<br>Patroni node<br>Consul server | PostgreSQL<br>Patroni<br>Consul | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
-| db3 | 10.0.0.13 | PostgreSQL node<br>Patroni node<br>Consul server | PostgreSQL<br>Patroni<br>Consul | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
-| proxy1 | 10.0.0.21 | HAProxy node<br>PgBouncer node<br>Keepalived MASTER<br>pgAdmin host | HAProxy<br>PgBouncer<br>Keepalived<br>pgAdmin | 5000 (HAProxy RW)<br>5001 (HAProxy RO)<br>5432 (PgBouncer)<br>80 (pgAdmin) |
-| proxy2 | 10.0.0.22 | HAProxy node<br>PgBouncer node<br>Keepalived BACKUP | HAProxy<br>PgBouncer<br>Keepalived | 5000 (HAProxy RW)<br>5001 (HAProxy RO)<br>5432 (PgBouncer) |
-| VIP | 10.0.0.30 | Virtual IP – Managed by Keepalived | - (Clients connect via this IP) | 5432 (PgBouncer)<br>5000 (HAProxy RW)<br>5001 (HAProxy RO) |
+| Hostname | Roles | Ports |
+|----------|-------|-------|
+| db1 | PostgreSQL node<br>Patroni node<br>Consul server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
+| db2 | PostgreSQL node<br>Patroni node<br>Consul server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
+| db3 | PostgreSQL node<br>Patroni node<br>Consul server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
+| proxy1 | HAProxy node<br>PgBouncer node<br>Keepalived MASTER<br>pgAdmin host | 5000 (HAProxy RW)<br>5001 (HAProxy RO)<br>5432 (PgBouncer)<br>80 (pgAdmin) |
+| proxy2 | HAProxy node<br>PgBouncer node<br>Keepalived BACKUP | 5000 (HAProxy RW)<br>5001 (HAProxy RO)<br>5432 (PgBouncer) |
+| VIP | Virtual IP – Managed by Keepalived | 5432 (PgBouncer)<br>5000 (HAProxy RW)<br>5001 (HAProxy RO) |
 
 ## Labs
 

@@ -1,6 +1,6 @@
 # Installing and Configuring Patroni
 
-In this lab, you will install Patroni and its dependencies on each cluster node (`node-0`, `node-1`, `node-2`) and configure it to manage the PostgreSQL instances using the etcd cluster set up previously.
+In this lab, you will install Patroni and its dependencies on each database node (`db1`, `db2`, `db3`) and configure it to manage the PostgreSQL instances using the etcd cluster set up previously.
 
 Commands in this section should be run from the `jumpbox`.
 
@@ -9,7 +9,7 @@ Commands in this section should be run from the `jumpbox`.
 Install Patroni using `pip` along with necessary Python libraries for PostgreSQL and etcd interaction.
 
 ```bash
-for host in node-0 node-1 node-2; do
+for host in db1 db2 db3; do
   # Install pip and build dependencies
   ssh root@${host} "apt-get update"
   ssh root@${host} "apt-get install -y python3-pip python3-dev python3-venv build-essential libpq-dev python3-setuptools"
@@ -21,7 +21,7 @@ done
 
 Verify the installation on one node:
 ```bash
-ssh root@node-0 patroni --version
+ssh root@db1 patroni --version
 ```
 
 ## Create Patroni Configuration File
@@ -30,7 +30,7 @@ Patroni uses a YAML configuration file. We will create a template and then gener
 
 Create the directory for Patroni configuration on each node:
 ```bash
-for host in node-0 node-1 node-2; do
+for host in db1 db2 db3; do
   ssh root@${host} "mkdir -p /etc/patroni"
 done
 ```
@@ -43,21 +43,23 @@ We will use the etcd certificates generated in the previous step for secure comm
 PG_VERSION=16 # Ensure this matches the installed PostgreSQL version
 
 # Get node IPs for etcd connection
-NODE0_IP=$(grep node-0 machines.txt | cut -d' ' -f1)
-NODE1_IP=$(grep node-1 machines.txt | cut -d' ' -f1)
-NODE2_IP=$(grep node-2 machines.txt | cut -d' ' -f1)
+DB1_IP=$(grep db1 machines.txt | cut -d' ' -f1)
+DB2_IP=$(grep db2 machines.txt | cut -d' ' -f1)
+DB3_IP=$(grep db3 machines.txt | cut -d' ' -f1)
 
-while read IP FQDN HOST; do
+# We'll create configuration only for database nodes
+for host in db1 db2 db3; do
+  IP=$(grep ${host} machines.txt | cut -d' ' -f1)
 
 # Note: Adjust user/password/database names as desired.
 # Patroni needs superuser access initially to bootstrap.
 # The replication user will be created by Patroni during bootstrap.
 
-cat << EOF | ssh root@${HOST} "cat > /etc/patroni/patroni.yml"
+cat << EOF | ssh root@${host} "cat > /etc/patroni/patroni.yml"
 scope: patroni-cluster # Name of the cluster
 namespace: /patroni/    # Base path in etcd
 
-name: ${HOST}          # Unique name for this node
+name: ${host}          # Unique name for this node
 
 restapi:
   listen: ${IP}:8008
@@ -65,13 +67,13 @@ restapi:
 
 etcd:
   hosts:
-    - ${NODE0_IP}:2379
-    - ${NODE1_IP}:2379
-    - ${NODE2_IP}:2379
+    - ${DB1_IP}:2379
+    - ${DB2_IP}:2379
+    - ${DB3_IP}:2379
   protocol: https
   cacert: /etc/etcd/ca.crt
-  cert: /etc/etcd/${HOST}-etcd.crt # Reuse etcd node cert for client auth
-  key: /etc/etcd/${HOST}-etcd.key
+  cert: /etc/etcd/${host}-etcd.crt # Reuse etcd node cert for client auth
+  key: /etc/etcd/${host}-etcd.key
 
 bootstrap:
   dcs:
@@ -110,7 +112,7 @@ postgresql:
   connect_address: ${IP}:5432
   data_dir: /var/lib/postgresql/${PG_VERSION}/main # Must match PG installation
   bin_dir: /usr/lib/postgresql/${PG_VERSION}/bin # Must match PG installation
-  pgpass: /tmp/pgpass${HOST} # Patroni manages this file
+  pgpass: /tmp/pgpass${host} # Patroni manages this file
   authentication:
     replication:
       username: replicator
@@ -122,9 +124,9 @@ postgresql:
 EOF
 
   # Set permissions (adjust if running Patroni as non-root)
-  ssh root@${HOST} "chown -R root:root /etc/patroni && chmod 600 /etc/patroni/patroni.yml"
+  ssh root@${host} "chown -R root:root /etc/patroni && chmod 600 /etc/patroni/patroni.yml"
 
-done < machines.txt
+done
 ```
 
 **Important Security Note:** The passwords in the configuration file are in plain text. In a production environment, consider using environment variables or a secrets management system to handle sensitive credentials.
@@ -134,7 +136,7 @@ done < machines.txt
 Create a systemd unit file to manage the Patroni service.
 
 ```bash
-for host in node-0 node-1 node-2; do
+for host in db1 db2 db3; do
 cat << EOF | ssh root@${host} "cat > /etc/systemd/system/patroni.service"
 [Unit]
 Description=Patroni PostgreSQL High-Availability Manager
@@ -160,7 +162,7 @@ done
 Reload the systemd daemon and enable the Patroni service so it starts on boot. **Do not start the service yet.** The cluster bootstrapping will happen in the next step.
 
 ```bash
-for host in node-0 node-1 node-2; do
+for host in db1 db2 db3; do
   ssh root@${host} "systemctl daemon-reload"
   ssh root@${host} "systemctl enable patroni"
 done

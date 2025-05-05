@@ -1,6 +1,6 @@
 # Provisioning Compute Resources
 
-Patroni requires a set of machines to host the Distributed Configuration Store (DCS) like etcd, the PostgreSQL instances managed by Patroni, and potentially a load balancer. In this lab you will provision the machines required for setting up a Patroni cluster.
+Patroni requires a set of machines to host the Distributed Configuration Store (DCS) like Consul, the PostgreSQL instances managed by Patroni, and HAProxy/PgBouncer for load balancing. In this lab you will provision the machines required for setting up a Patroni cluster.
 
 ## Machine Database
 
@@ -19,13 +19,16 @@ cat machines.txt
 ```
 
 ```text
-XXX.XXX.XXX.XXX haproxy.patroni.local haproxy
-XXX.XXX.XXX.XXX node-0.patroni.local node-0
-XXX.XXX.XXX.XXX node-1.patroni.local node-1
-XXX.XXX.XXX.XXX node-2.patroni.local node-2
+XXX.XXX.XXX.XXX jumpbox.patroni.local jumpbox
+XXX.XXX.XXX.XXX db1.patroni.local db1
+XXX.XXX.XXX.XXX db2.patroni.local db2
+XXX.XXX.XXX.XXX db3.patroni.local db3
+XXX.XXX.XXX.XXX proxy1.patroni.local proxy1
+XXX.XXX.XXX.XXX proxy2.patroni.local proxy2
+XXX.XXX.XXX.XXX vip.patroni.local vip
 ```
 
-Now it's your turn to create a `machines.txt` file with the details for the three machines you will be using to create your Patroni cluster. Use the example machine database from above and add the details for your machines.
+Now it's your turn to create a `machines.txt` file with the details for the machines you will be using to create your Patroni cluster. Use the example machine database from above and add the details for your machines.
 
 ## Configuring SSH Access
 
@@ -35,7 +38,7 @@ SSH will be used to configure the machines in the cluster. Verify that you have 
 
 If `root` SSH access is enabled for each of your machines you can skip this section.
 
-By default, a new `debian` install disables SSH access for the `root` user. This is done for security reasons as the `root` user has total administrative control of unix-like systems. If a weak password is used on a machine connected to the internet, well, let's just say it's only a matter of time before your machine belongs to someone else. As mentioned earlier, we are going to enable `root` access over SSH in order to streamline the steps in this tutorial. Security is a tradeoff, and in this case, we are optimizing for convenience. Log on to each machine via SSH using your user account, then switch to the `root` user using the `su` command:
+By default, a new `ubuntu` install disables SSH access for the `root` user. This is done for security reasons as the `root` user has total administrative control of unix-like systems. If a weak password is used on a machine connected to the internet, well, let's just say it's only a matter of time before your machine belongs to someone else. As mentioned earlier, we are going to enable `root` access over SSH in order to streamline the steps in this tutorial. Security is a tradeoff, and in this case, we are optimizing for convenience. Log on to each machine via SSH using your user account, then switch to the `root` user using the `su` command:
 
 ```bash
 su - root
@@ -57,7 +60,7 @@ systemctl restart sshd
 
 ### Generate and Distribute SSH Keys
 
-In this section you will generate and distribute an SSH keypair to the `haproxy`, `node-0`, `node-1`, and `node-2` machines, which will be used to run commands on those machines throughout this tutorial. Run the following commands from the `jumpbox` machine.
+In this section you will generate and distribute an SSH keypair to the `db1`, `db2`, `db3`, `proxy1`, and `proxy2` machines, which will be used to run commands on those machines throughout this tutorial. Run the following commands from the `jumpbox` machine.
 
 Generate a new SSH key:
 
@@ -78,7 +81,9 @@ Copy the SSH public key to each machine:
 
 ```bash
 while read IP FQDN HOST; do
-  ssh-copy-id root@${IP}
+  if [ "$HOST" != "vip" ]; then
+    ssh-copy-id root@${IP}
+  fi
 done < machines.txt
 ```
 
@@ -86,20 +91,24 @@ Once each key is added, verify SSH public key access is working:
 
 ```bash
 while read IP FQDN HOST; do
-  ssh -n root@${IP} hostname
+  if [ "$HOST" != "vip" ]; then
+    ssh -n root@${IP} hostname
+  fi
 done < machines.txt
 ```
 
 ```text
-haproxy
-node-0
-node-1
-node-2
+jumpbox
+db1
+db2
+db3
+proxy1
+proxy2
 ```
 
 ## Hostnames
 
-In this section you will assign hostnames to the `haproxy`, `node-0`, `node-1`, and `node-2` machines. The hostname will be used when executing commands from the `jumpbox` to each machine. The hostname also plays a role within the cluster, particularly for node identification in the DCS and for inter-node communication.
+In this section you will assign hostnames to the `db1`, `db2`, `db3`, `proxy1`, and `proxy2` machines. The hostname will be used when executing commands from the `jumpbox` to each machine. The hostname also plays a role within the cluster, particularly for node identification in the DCS and for inter-node communication.
 
 To configure the hostname for each machine, run the following commands on the `jumpbox`.
 
@@ -107,10 +116,12 @@ Set the hostname on each machine listed in the `machines.txt` file:
 
 ```bash
 while read IP FQDN HOST; do
-    CMD="sed -i 's/^127.0.1.1.*/127.0.1.1\t${FQDN} ${HOST}/' /etc/hosts"
-    ssh -n root@${IP} "$CMD"
-    ssh -n root@${IP} hostnamectl set-hostname ${HOST}
-    ssh -n root@${IP} systemctl restart systemd-hostnamed
+    if [ "$HOST" != "vip" ]; then
+        CMD="sed -i 's/^127.0.1.1.*/127.0.1.1\t${FQDN} ${HOST}/' /etc/hosts"
+        ssh -n root@${IP} "$CMD"
+        ssh -n root@${IP} hostnamectl set-hostname ${HOST}
+        ssh -n root@${IP} systemctl restart systemd-hostnamed
+    fi
 done < machines.txt
 ```
 
@@ -118,20 +129,24 @@ Verify the hostname is set on each machine:
 
 ```bash
 while read IP FQDN HOST; do
-  ssh -n root@${IP} hostname --fqdn
+    if [ "$HOST" != "vip" ]; then
+        ssh -n root@${IP} hostname --fqdn
+    fi
 done < machines.txt
 ```
 
 ```text
-haproxy.patroni.local
-node-0.patroni.local
-node-1.patroni.local
-node-2.patroni.local
+jumpbox.patroni.local
+db1.patroni.local
+db2.patroni.local
+db3.patroni.local
+proxy1.patroni.local
+proxy2.patroni.local
 ```
 
 ## Host Lookup Table
 
-In this section you will generate a `hosts` file which will be appended to `/etc/hosts` file on the `jumpbox` and to the `/etc/hosts` files on all three cluster members used for this tutorial. This will allow each machine to be reachable using a hostname such as `haproxy`, `node-0`, `node-1`, or `node-2`.
+In this section you will generate a `hosts` file which will be appended to `/etc/hosts` file on the `jumpbox` and to the `/etc/hosts` files on all cluster members used for this tutorial. This will allow each machine to be reachable using a hostname such as `db1`, `db2`, `db3`, `proxy1`, or `proxy2`.
 
 Create a new `hosts` file and add a header to identify the machines being added:
 
@@ -158,10 +173,13 @@ cat hosts
 ```text
 
 # Patroni The Hard Way
-XXX.XXX.XXX.XXX haproxy.patroni.local haproxy
-XXX.XXX.XXX.XXX node-0.patroni.local node-0
-XXX.XXX.XXX.XXX node-1.patroni.local node-1
-XXX.XXX.XXX.XXX node-2.patroni.local node-2
+XXX.XXX.XXX.XXX jumpbox.patroni.local jumpbox
+XXX.XXX.XXX.XXX db1.patroni.local db1
+XXX.XXX.XXX.XXX db2.patroni.local db2
+XXX.XXX.XXX.XXX db3.patroni.local db3
+XXX.XXX.XXX.XXX proxy1.patroni.local proxy1
+XXX.XXX.XXX.XXX proxy2.patroni.local proxy2
+XXX.XXX.XXX.XXX vip.patroni.local vip
 ```
 
 ## Adding `/etc/hosts` Entries To A Local Machine
@@ -190,25 +208,29 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 
 # Patroni The Hard Way
-XXX.XXX.XXX.XXX haproxy.patroni.local haproxy
-XXX.XXX.XXX.XXX node-0.patroni.local node-0
-XXX.XXX.XXX.XXX node-1.patroni.local node-1
-XXX.XXX.XXX.XXX node-2.patroni.local node-2
+XXX.XXX.XXX.XXX jumpbox.patroni.local jumpbox
+XXX.XXX.XXX.XXX db1.patroni.local db1
+XXX.XXX.XXX.XXX db2.patroni.local db2
+XXX.XXX.XXX.XXX db3.patroni.local db3
+XXX.XXX.XXX.XXX proxy1.patroni.local proxy1
+XXX.XXX.XXX.XXX proxy2.patroni.local proxy2
+XXX.XXX.XXX.XXX vip.patroni.local vip
 ```
 
 At this point you should be able to SSH to each machine listed in the `machines.txt` file using a hostname.
 
 ```bash
-for host in haproxy node-0 node-1 node-2
+for host in db1 db2 db3 proxy1 proxy2
    do ssh root@${host} hostname
 done
 ```
 
 ```text
-haproxy
-node-0
-node-1
-node-2
+db1
+db2
+db3
+proxy1
+proxy2
 ```
 
 ## Adding `/etc/hosts` Entries To The Remote Machines
@@ -219,12 +241,14 @@ Copy the `hosts` file to each machine and append the contents to `/etc/hosts`:
 
 ```bash
 while read IP FQDN HOST; do
-  scp hosts root@${HOST}:~/
-  ssh -n \
-    root@${HOST} "cat hosts >> /etc/hosts"
+  if [ "$HOST" != "vip" ]; then
+    scp hosts root@${HOST}:~/
+    ssh -n \
+      root@${HOST} "cat hosts >> /etc/hosts"
+  fi
 done < machines.txt
 ```
 
-At this point, hostnames can be used when connecting to machines from your `jumpbox` machine, or any of the three machines in the Patroni cluster. Instead of using IP addresses you can now connect to machines using a hostname such as `haproxy`, `node-0`, `node-1`, or `node-2`.
+At this point, hostnames can be used when connecting to machines from your `jumpbox` machine, or any of the machines in the Patroni cluster. Instead of using IP addresses you can now connect to machines using a hostname such as `db1`, `db2`, `db3`, `proxy1`, or `proxy2`.
 
 Next: [Setting up the Distributed Configuration Store (etcd)](04-setting-up-dcs.md)

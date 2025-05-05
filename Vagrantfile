@@ -33,21 +33,23 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  # HAProxy - Load Balancer
-  config.vm.define "haproxy" do |haproxy|
-    haproxy.vm.hostname = "haproxy"
-    haproxy.vm.network "private_network", ip: "192.168.56.20"
-    haproxy.vm.provider "virtualbox" do |vb|
-      vb.memory = "512"
-      vb.cpus = 1
+  # 3 DB nodes for PostgreSQL, Patroni and Consul
+  (1..3).each do |i|
+    config.vm.define "db#{i}" do |node|
+      node.vm.hostname = "db#{i}"
+      node.vm.network "private_network", ip: "192.168.56.#{10 + i}"
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = "1024"
+        vb.cpus = 1
+      end
     end
   end
 
-  # 3 Patroni, PostgreSQL and etcd nodes
-  (0..2).each do |i|
-    config.vm.define "node-#{i}" do |node|
-      node.vm.hostname = "node-#{i}"
-      node.vm.network "private_network", ip: "192.168.56.#{30 + i}"
+  # 2 proxy nodes for HAProxy, PgBouncer and Keepalived
+  (1..2).each do |i|
+    config.vm.define "proxy#{i}" do |node|
+      node.vm.hostname = "proxy#{i}"
+      node.vm.network "private_network", ip: "192.168.56.#{20 + i}"
       node.vm.provider "virtualbox" do |vb|
         vb.memory = "1024"
         vb.cpus = 1
