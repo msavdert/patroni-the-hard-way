@@ -13,82 +13,61 @@ Consul will be used as the Distributed Configuration Store (DCS) for Patroni. Th
 Run the following commands from the `jumpbox` to install Consul on all nodes:
 
 ```bash
-CONSUL_VERSION="1.16.2"
-while read IP FQDN HOST SUBNET; do
-  ssh -n root@${HOST} "dnf install -y wget unzip && \
-    wget https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip -O /tmp/consul.zip && \
-    unzip -o /tmp/consul.zip -d /usr/local/bin && \
-    chmod +x /usr/local/bin/consul && \
-    consul --version"
-done < machines.txt
+for host in db1 db2 db3; do
+  ssh -n root@${host} "dnf install -y yum-utils && \
+    yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo && \
+    dnf -y install consul"
+done
 ```
 
-### Create Consul User and Directories
-
 ```bash
-while read IP FQDN HOST SUBNET; do
-  ssh -n root@${HOST} "useradd --system --home /etc/consul.d --shell /bin/false consul; \
-    mkdir -p /etc/consul.d /var/lib/consul; \
-    chown -R consul:consul /etc/consul.d /var/lib/consul"
-done < machines.txt
+ssh db1 "consul --version"
 ```
 
 ### Configure Consul
 
-Create a Consul configuration file for each node. Example configuration for a server node (db1):
+Create the Consul configuration file for each node by running the following loop from the jumpbox. This will configure Consul on all database nodes (`db1`, `db2`, `db3`) in the required HCL format:
 
-```json
-{
-  "server": true,
-  "node_name": "db1",
-  "datacenter": "dc1",
-  "data_dir": "/var/lib/consul",
-  "bind_addr": "<db1_ip>",
-  "bootstrap_expect": 3,
-  "client_addr": "0.0.0.0",
-  "ui": true
+```bash
+for host in db1 db2 db3; do
+  IP=$(grep ${host} machines.txt | cut -d' ' -f1)
+  cat << EOF | ssh root@${host} "cat > /etc/consul.d/consul.hcl"
+datacenter       = "dc1"
+node_name        = "${host}"
+bind_addr        = "${IP}"
+client_addr      = "0.0.0.0"
+data_dir        = "/opt/consul"
+log_level        = "INFO"
+server           = true
+bootstrap_expect = 3
+retry_join       = ["db1", "db2", "db3"]
+
+ui_config {
+  enabled = true
 }
-```
-
-Copy the configuration to `/etc/consul.d/consul.json` on each node, replacing `<db1_ip>` with the actual IP address.
-
-### Create Consul Systemd Service
-
-Create the following systemd unit file at `/etc/systemd/system/consul.service` on each node:
-
-```ini
-[Unit]
-Description=Consul Agent
-Requires=network-online.target
-After=network-online.target
-
-[Service]
-User=consul
-Group=consul
-ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul.d/
-ExecReload=/bin/kill -HUP $MAINPID
-KillMode=process
-Restart=on-failure
-LimitNOFILE=4096
-
-[Install]
-WantedBy=multi-user.target
+EOF
+done
 ```
 
 Enable and start Consul:
 
 ```bash
-while read IP FQDN HOST SUBNET; do
-  ssh -n root@${HOST} "systemctl daemon-reload && systemctl enable consul && systemctl start consul"
-done < machines.txt
+for host in db1 db2 db3; do
+  ssh -n root@${host} "systemctl daemon-reload && systemctl enable consul --now"
+done
 ```
 
 Verify Consul is running:
 
 ```bash
-while read IP FQDN HOST SUBNET; do
-  ssh -n root@${HOST} "systemctl status consul --no-pager | grep Active"
-done < machines.txt
+for host in db1 db2 db3; do
+  ssh -n root@${host} "systemctl status consul --no-pager | grep Active"
+done
+```
+
+```bash
+ssh -n root@db1 "consul members"
+ssh -n root@db1 "consul operator raft list-peers"
 ```
 
 At this point, you have a functioning, secure 3-node Consul cluster ready for Patroni.

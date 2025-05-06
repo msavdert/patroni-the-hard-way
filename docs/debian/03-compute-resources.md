@@ -63,16 +63,7 @@ In this section you will generate and distribute an SSH keypair to the `db1`, `d
 Generate a new SSH key:
 
 ```bash
-ssh-keygen
-```
-
-```text
-Generating public/private rsa key pair.
-Enter file in which to save the key (/root/.ssh/id_rsa):
-Enter passphrase (empty for no passphrase):
-Enter same passphrase again:
-Your identification has been saved in /root/.ssh/id_rsa
-Your public key has been saved in /root/.ssh/id_rsa.pub
+ssh-keygen -b 2048 -t rsa -f $HOME/.ssh/id_rsa -N ''
 ```
 
 Copy the SSH public key to each machine:
@@ -267,8 +258,10 @@ done < machines.txt
 To avoid connectivity issues during the tutorial, disable and stop any firewall services on the jumpbox:
 
 ```bash
-systemctl disable --now ufw || true
-systemctl disable --now firewalld || true
+while read IP FQDN HOST SUBNET; do
+  ssh -n \
+    root@${HOST} "systemctl disable --now ufw || true"
+done < machines.txt
 ```
 
 ### Install and Enable Time Synchronization (chrony)

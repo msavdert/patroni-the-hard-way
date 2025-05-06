@@ -1,21 +1,18 @@
 # Installing and Configuring Patroni
 
-In this lab, you will install Patroni and its dependencies on each database node (`db1`, `db2`, `db3`) and configure it to manage the PostgreSQL instances using the Consul cluster set up previously.
+In this section, you will install Patroni and its dependencies on all database nodes (`db1`, `db2`, `db3`) and configure it to manage the PostgreSQL instances using the Consul cluster set up previously.
 
-Commands in this section should be run from the `jumpbox`.
+All commands should be run from the `jumpbox` unless otherwise specified.
 
-## Install Patroni and Dependencies
+## 1. Install Patroni and Dependencies
 
-Install Patroni using `pip` along with necessary Python libraries for PostgreSQL and Consul interaction.
+Install Patroni using `pip` along with necessary Python libraries for PostgreSQL and Consul interaction:
 
 ```bash
 for host in db1 db2 db3; do
-  # Install pip and build dependencies
-  ssh root@${host} "apt-get update"
-  ssh root@${host} "apt-get install -y python3-pip python3-dev python3-psycopg2 libpq-dev"
-
-  # Install Patroni and required libraries
-  ssh root@${host} "pip3 install patroni[consul] --break-system-packages"
+  ssh root@${host} "dnf install -y python3 python3-pip python3-psycopg2 gcc python3-devel libpq-devel"
+  ssh root@${host} "pip3 install --upgrade pip"
+  ssh root@${host} "pip3 install patroni[consul]"
 done
 ```
 
@@ -24,7 +21,7 @@ Verify the installation on one node:
 ssh root@db1 patroni --version
 ```
 
-## Create Patroni Configuration File
+## 2. Create Patroni Configuration File
 
 Patroni uses a YAML configuration file. We will create a template and then generate a specific configuration for each node.
 
@@ -40,19 +37,13 @@ Now, create the configuration file (`/etc/patroni/patroni.yml`) on each node. Th
 ```bash
 PG_VERSION=17 # Ensure this matches the installed PostgreSQL version
 
-# Get node IPs for Consul connection
-DB1_IP=$(grep db1 machines.txt | cut -d' ' -f1)
-DB2_IP=$(grep db2 machines.txt | cut -d' ' -f1)
-DB3_IP=$(grep db3 machines.txt | cut -d' ' -f1)
-
 for host in db1 db2 db3; do
   IP=$(grep ${host} machines.txt | cut -d' ' -f1)
-
 cat << EOF | ssh root@${host} "cat > /etc/patroni/patroni.yml"
-scope: patroni-cluster # Name of the cluster
-namespace: /patroni/    # Base path in Consul
+scope: patroni-cluster
+namespace: /patroni/
 
-name: ${host}          # Unique name for this node
+name: ${host}
 
 restapi:
   listen: ${IP}:8008
@@ -63,7 +54,6 @@ consul:
   port: 8500
   register_service: true
   protocol: http
-  # token: <your-consul-acl-token> # Uncomment and set if using Consul ACLs
 
 bootstrap:
   dcs:
@@ -96,8 +86,8 @@ bootstrap:
 postgresql:
   listen: ${IP}:5432
   connect_address: ${IP}:5432
-  data_dir: /var/lib/postgresql/${PG_VERSION}/main
-  bin_dir: /usr/lib/postgresql/${PG_VERSION}/bin
+  data_dir: /var/lib/pgsql/${PG_VERSION}/data
+  bin_dir: /usr/pgsql-${PG_VERSION}/bin
   pgpass: /tmp/pgpass${host}
   authentication:
     replication:
@@ -107,16 +97,15 @@ postgresql:
       username: admin
       password: StrongAdminPassword
 EOF
-
   ssh root@${host} "chown -R root:root /etc/patroni && chmod 600 /etc/patroni/patroni.yml"
 done
 ```
 
-**Important Security Note:** The passwords in the configuration file are in plain text. In a production environment, consider using environment variables or a secrets management system to handle sensitive credentials.
+**Security Note:** The passwords in the configuration file are in plain text. In a production environment, consider using environment variables or a secrets management system to handle sensitive credentials.
 
-## Create Patroni Systemd Service
+## 3. Create Patroni Systemd Service
 
-Create a systemd unit file to manage the Patroni service.
+Create a systemd unit file to manage the Patroni service:
 
 ```bash
 for host in db1 db2 db3; do
@@ -127,8 +116,8 @@ After=network.target consul.service
 Requires=consul.service
 
 [Service]
-User=root # Or a dedicated 'patroni' user if created
-Group=root # Or a dedicated 'patroni' group
+User=postgres
+Group=postgres
 ExecStart=/usr/local/bin/patroni /etc/patroni/patroni.yml
 Restart=on-failure
 KillMode=process
@@ -140,7 +129,7 @@ EOF
 done
 ```
 
-## Enable Patroni Service
+## 4. Enable Patroni Service
 
 Reload the systemd daemon and enable the Patroni service so it starts on boot. **Do not start the service yet.** The cluster bootstrapping will happen in the next step.
 

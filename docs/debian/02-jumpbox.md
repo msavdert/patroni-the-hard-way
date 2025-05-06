@@ -17,8 +17,10 @@ All commands will be run as the `root` user. This is being done for the sake of 
 Now that you are logged into the `jumpbox` machine as the `root` user, you will install the command line utilities that will be used to perform various tasks throughout the tutorial.
 
 ```bash
-apt update
-apt install -y wget curl vim openssl git
+{
+  apt-get update
+  apt-get -y install wget curl vim openssl git
+}
 ```
 
 At this point the `jumpbox` has been set up with the basic command line tools and utilities necessary to complete the labs in this tutorial. Specific software like Patroni, PostgreSQL, and etcd will be installed on the cluster nodes in later steps.

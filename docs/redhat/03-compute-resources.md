@@ -63,16 +63,7 @@ In this section you will generate and distribute an SSH keypair to the `db1`, `d
 Generate a new SSH key:
 
 ```bash
-ssh-keygen
-```
-
-```text
-Generating public/private rsa key pair.
-Enter file in which to save the key (/root/.ssh/id_rsa):
-Enter passphrase (empty for no passphrase):
-Enter same passphrase again:
-Your identification has been saved in /root/.ssh/id_rsa
-Your public key has been saved in /root/.ssh/id_rsa.pub
+ssh-keygen -b 2048 -t rsa -f $HOME/.ssh/id_rsa -N ''
 ```
 
 Copy the SSH public key to each machine:
@@ -248,7 +239,7 @@ Run the following commands from the `jumpbox` to install, enable, and start chro
 ```bash
 while read IP FQDN HOST SUBNET; do
   ssh -n \
-    root@${HOST} "dnf install -y chrony && systemctl enable chronyd && systemctl start chronyd"
+    root@${HOST} "dnf install -y chrony && systemctl enable chronyd --now"
 done < machines.txt
 ```
 
@@ -267,18 +258,10 @@ done < machines.txt
 To avoid connectivity issues during the tutorial, disable and stop any firewall services on the jumpbox:
 
 ```bash
-systemctl disable --now firewalld || true
-systemctl disable --now ufw || true
-```
-
-### Install and Enable Time Synchronization (chrony)
-
-Accurate time synchronization is critical for distributed systems. Install, enable, and start the chrony service:
-
-```bash
-dnf install -y chrony
-systemctl enable chronyd
-systemctl start chronyd
+while read IP FQDN HOST SUBNET; do
+  ssh -n \
+    root@${HOST} "systemctl disable --now firewalld || true"
+done < machines.txt
 ```
 
 Next: [Setting up the Distributed Configuration Store (consul)](04-setting-up-dcs.md)
