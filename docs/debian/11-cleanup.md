@@ -1,4 +1,4 @@
-# Cleaning Up
+# Cleanup
 
 This lab walks through deleting the resources created during this tutorial.
 

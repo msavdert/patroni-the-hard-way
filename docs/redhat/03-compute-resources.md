@@ -248,7 +248,7 @@ Run the following commands from the `jumpbox` to install, enable, and start chro
 ```bash
 while read IP FQDN HOST SUBNET; do
   ssh -n \
-    root@${HOST} "apt-get update && apt-get install -y chrony && systemctl enable chrony && systemctl start chrony"
+    root@${HOST} "dnf install -y chrony && systemctl enable chronyd && systemctl start chronyd"
 done < machines.txt
 ```
 
@@ -257,8 +257,8 @@ Verify that chrony is running on all nodes:
 ```bash
 while read IP FQDN HOST SUBNET; do
   ssh -n \
-    root@${HOST} "systemctl status chrony --no-pager | grep Active"
-    echo "Checked chrony on $host"
+    root@${HOST} "systemctl status chronyd --no-pager | grep Active"
+    echo "Checked chrony on $HOST"
 done < machines.txt
 ```
 

@@ -37,4 +37,4 @@ You should see `postgresql-17` listed for each host.
 
 After installing PostgreSQL 17 and contrib on all database nodes, continue with Patroni configuration and cluster initialization as described in the following sections.
 
-Next: [Configuring Patroni](06-configuring-patroni.md)
+Next: [Installing and Configuring Patroni](06-configuring-patroni.md)

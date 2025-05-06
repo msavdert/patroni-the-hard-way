@@ -41,4 +41,4 @@ You should see JSON output showing the cluster members and their roles (one lead
 
 Your Patroni cluster is now bootstrapped and running with Consul as the DCS. Continue with client access configuration in the next section.
 
-Next: [Configuring Client Access](08-configuring-client-access.md)
+Next: [Configuring Client Access (HAProxy)](08-configuring-client-access.md)
