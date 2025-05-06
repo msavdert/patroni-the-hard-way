@@ -17,34 +17,7 @@ All commands will be run as the `root` user. This is being done for the sake of 
 Now that you are logged into the `jumpbox` machine as the `root` user, you will install the command line utilities that will be used to perform various tasks throughout the tutorial.
 
 ```bash
-{
-  dnf install -y wget curl vim openssl git
-}
-```
-
-### Sync GitHub Repository
-
-Now it's time to download a copy of this tutorial which contains the configuration files and templates that will be used build your Patroni cluster from the ground up. Clone the Patroni The Hard Way git repository using the `git` command:
-
-```bash
-git clone --depth 1 \
-  https://github.com/msavdert/patroni-the-hard-way.git
-```
-
-Change into the `patroni-the-hard-way` directory:
-
-```bash
-cd patroni-the-hard-way
-```
-
-This will be the working directory for the rest of the tutorial. If you ever get lost run the `pwd` command to verify you are in the right directory when running commands on the `jumpbox`:
-
-```bash
-pwd
-```
-
-```text
-/root/patroni-the-hard-way
+dnf install -y wget curl vim openssl git
 ```
 
 At this point the `jumpbox` has been set up with the basic command line tools and utilities necessary to complete the labs in this tutorial. Specific software like Patroni, PostgreSQL, and etcd will be installed on the cluster nodes in later steps.

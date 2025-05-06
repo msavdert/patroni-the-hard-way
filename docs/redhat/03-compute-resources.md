@@ -262,4 +262,23 @@ while read IP FQDN HOST SUBNET; do
 done < machines.txt
 ```
 
+### Disable and Stop Firewall Services
+
+To avoid connectivity issues during the tutorial, disable and stop any firewall services on the jumpbox:
+
+```bash
+systemctl disable --now firewalld || true
+systemctl disable --now ufw || true
+```
+
+### Install and Enable Time Synchronization (chrony)
+
+Accurate time synchronization is critical for distributed systems. Install, enable, and start the chrony service:
+
+```bash
+dnf install -y chrony
+systemctl enable chronyd
+systemctl start chronyd
+```
+
 Next: [Setting up the Distributed Configuration Store (consul)](04-setting-up-dcs.md)
