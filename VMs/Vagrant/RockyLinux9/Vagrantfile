@@ -1,0 +1,58 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "nobreak-labs/rocky-9"
+  config.vm.box_version = "9.5"
+
+  # Basic VirtualBox configuration
+  config.vm.provider "virtualbox" do |vb|
+    vb.customize ["modifyvm", :id, "--audio", "none"]
+  end
+
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # Provisioning script to install SSH, enable root login, and set root password
+  config.vm.provision "shell", inline: <<-SHELL
+
+    # Enable root SSH login
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+    # Set root password
+    echo "root:root" | chpasswd
+
+    # Restart SSH service
+    systemctl restart sshd
+  SHELL
+
+  # Jumpbox - Management server
+  config.vm.define "jumpbox" do |jumpbox|
+    jumpbox.vm.hostname = "jumpbox"
+    jumpbox.vm.network "private_network", ip: "192.168.56.10"
+    jumpbox.vm.provider "virtualbox" do |vb|
+      vb.memory = 512
+      vb.cpus = 1
+    end
+  end
+
+  # 3 DB nodes for PostgreSQL, Patroni and Consul
+  (1..3).each do |i|
+    config.vm.define "db#{i}" do |node|
+      node.vm.hostname = "db#{i}"
+      node.vm.network "private_network", ip: "192.168.56.#{10 + i}"
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = 1024
+        vb.cpus = 1
+      end
+    end
+  end
+
+  # 2 proxy nodes for HAProxy, PgBouncer and Keepalived
+  (1..2).each do |i|
+    config.vm.define "proxy#{i}" do |node|
+      node.vm.hostname = "proxy#{i}"
+      node.vm.network "private_network", ip: "192.168.56.#{20 + i}"
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = 512
+        vb.cpus = 1
+      end
+    end
+  end
+end
