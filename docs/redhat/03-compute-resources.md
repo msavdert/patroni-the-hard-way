@@ -253,7 +253,7 @@ while read IP FQDN HOST SUBNET; do
 done < machines.txt
 ```
 
-### Disable and Stop Firewall Services
+## Disable and Stop Firewall Services
 
 To avoid connectivity issues during the tutorial, disable and stop any firewall services on the jumpbox:
 
@@ -264,4 +264,25 @@ while read IP FQDN HOST SUBNET; do
 done < machines.txt
 ```
 
-Next: [Setting up the Distributed Configuration Store (consul)](04-setting-up-dcs.md)
+## Disable SELinux on All Nodes
+
+To prevent SELinux from interfering with the cluster setup, you will disable SELinux on all nodes. Run the following commands from the `jumpbox` to set SELinux to permissive mode immediately and disable it permanently on all db1, db2, db3, proxy1, and proxy2 nodes:
+
+```bash
+while read IP FQDN HOST SUBNET; do
+  ssh -n \
+    root@${HOST} "setenforce 0 && sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config"
+done < machines.txt
+```
+
+Verify SELinux is disabled on all nodes:
+
+```bash
+while read IP FQDN HOST SUBNET; do
+  ssh -n \
+    root@${HOST} "getenforce"
+  echo "Checked SELinux on $HOST"
+done < machines.txt
+```
+
+Next: [Setting up the Distributed Configuration Store (etcd)](04-setting-up-dcs.md)
