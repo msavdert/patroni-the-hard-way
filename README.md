@@ -1,5 +1,7 @@
 # Patroni The Hard Way
 
+> "I have learned a lot from [@kelseyhightower](https://github.com/kelseyhightower) and this project is inspired by his work."
+
 This tutorial walks you through setting up a highly available PostgreSQL cluster using Patroni the hard way. This guide is not for someone looking for a fully automated tool to bring up a Patroni cluster. Patroni The Hard Way is optimized for learning, which means taking the long route to ensure you understand each task required to bootstrap a resilient PostgreSQL cluster managed by Patroni.
 
 > The results of this tutorial should not be viewed as production ready, and may receive limited support from the community, but don't let that stop you from learning!

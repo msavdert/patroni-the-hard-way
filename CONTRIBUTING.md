@@ -1,18 +1,14 @@
-This project is made possible by contributors like YOU! While all contributions are welcomed, please be sure and follow the following suggestions to help your PR get merged.
+Everyone is welcome to contribute to this project! Please review the following guidelines to help your PR get merged more quickly.
 
 ## License
 
-This project uses an [Apache license](LICENSE). Be sure you're comfortable with the implications of that before working up a patch.
+This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE). Please review the terms before contributing.
 
-## Review and merge process
+## Review and Merge Process
 
-Review and merge duties are managed by [@kelseyhightower](https://github.com/kelseyhightower). Expect some burden of proof for demonstrating the marginal value of adding new content to the tutorial.
+The review and merge process is managed by the project maintainer. When adding new content, please clearly demonstrate the value of your contribution.
 
-Here are some examples of the review and justification process:
-- [#208](https://github.com/kelseyhightower/kubernetes-the-hard-way/pull/208)
-- [#282](https://github.com/kelseyhightower/kubernetes-the-hard-way/pull/282)
+## Notes on Minor Edits
 
-## Notes on minutiae
-
-If you find a bug that breaks the guide, please do submit it. If you are considering  a minor copy edit for tone, grammar, or simple inconsistent whitespace, consider the tradeoff between maintainer time and community benefit before investing too much of your time.
+If you find a bug that breaks the guide, please report it. For minor edits such as tone, grammar, or whitespace, consider the benefit to the community and the maintainer's time before submitting.
 
