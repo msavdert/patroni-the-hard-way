@@ -14,9 +14,8 @@ Run the following commands from the `jumpbox` to install etcd on all nodes:
 
 ```bash
 for host in db1 db2 db3; do
-  ssh -n root@${host} "dnf install -y yum-utils && \
-    yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo && \
-    dnf -y install consul"
+  ssh -n root@${host} "dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-aarch64/pgdg-redhat-repo-latest.noarch.rpm && \
+    dnf --enablerepo=pgdg-rhel9-extras install -y etcd"
 done
 ```
 
