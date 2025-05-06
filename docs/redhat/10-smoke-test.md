@@ -11,7 +11,7 @@ First, ensure the cluster is healthy and HAProxy is routing to the leader.
 Check Patroni cluster status:
 
 ```bash
-patronictl -c patronictl.yml list patroni-cluster
+ssh root@db1 "patronictl -c /etc/patroni/patroni.yml list patroni-cluster"
 ```
 
 Ensure one node is `Leader` and others are `Replica`, all in `running` state.
@@ -19,7 +19,7 @@ Ensure one node is `Leader` and others are `Replica`, all in `running` state.
 Check HAProxy connection:
 
 ```bash
-PGPASSWORD=StrongAdminPassword psql -h localhost -p 5000 -U admin -d postgres -c "SELECT pg_is_in_recovery(), inet_server_addr();"
+PGPASSWORD=StrongAdminPassword psql -h proxy1 -p 5000 -U postgres -d postgres -c "SELECT pg_is_in_recovery(), inet_server_addr();"
 ```
 
 This should connect to the leader (returns `f` for recovery and the leader's IP).
@@ -30,7 +30,7 @@ Connect to the cluster via HAProxy (which directs you to the leader) and perform
 
 ```bash
 # Connect using psql via HAProxy
-PGPASSWORD=StrongAdminPassword psql -h localhost -p 5000 -U admin -d postgres
+PGPASSWORD=StrongAdminPassword psql -h proxy1 -p 5000 -U postgres -d postgres
 ```
 
 Inside the `psql` session, run the following SQL commands:
@@ -54,20 +54,13 @@ You should see the two inserted rows.
 
 ## Read Data from Replica
 
-Now, let's verify that the data written to the leader has been replicated to a replica node. We need to connect directly to a replica's PostgreSQL instance (not through HAProxy).
+Now, let's verify that the data written to the leader has been replicated to a replica node. We need to connect directly to a replica's PostgreSQL instance.
 
-Identify a replica node (e.g., `node-1`) and its IP address.
-
-```bash
-REPLICA_HOST=node-1 # Or node-2
-REPLICA_IP=$(grep ${REPLICA_HOST} machines.txt | cut -d' ' -f1)
-```
-
-Connect directly to the replica's PostgreSQL port (default 5432):
+Connect directly to the replica's PostgreSQL replica port (default 5001):
 
 ```bash
 # Connect directly to the replica IP
-PGPASSWORD=StrongAdminPassword psql -h ${REPLICA_IP} -p 5432 -U admin -d postgres
+PGPASSWORD=StrongAdminPassword psql -h proxy1 -p 5001 -U postgres -d postgres
 ```
 
 Inside the `psql` session on the replica, run the following SQL commands:
