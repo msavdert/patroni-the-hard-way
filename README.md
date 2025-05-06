@@ -22,7 +22,7 @@ Component versions:
 
 * [Patroni](https://github.com/zalando/patroni) v4.x
 * [PostgreSQL](https://www.postgresql.org/) v17.x
-* [Consul](https://github.com/hashicorp/consul/) v1.20.x (or Etcd/Zookeeper)
+* [etcd](https://github.com/etcd-io/etcd) v3.5.x (or Consul/Zookeeper)
 * [HAProxy](https://github.com/haproxy/haproxy/) v3.x
 * [PgBouncer](https://github.com/pgbouncer/pgbouncer) v1.24.x
 * [Ubuntu](https://ubuntu.com/) v24.04
@@ -35,9 +35,9 @@ The following table outlines the full cluster topology that will be built in thi
 
 | Hostname | Roles | Ports |
 |----------|-------|-------|
-| db1 | PostgreSQL node<br>Patroni node<br>Consul server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
-| db2 | PostgreSQL node<br>Patroni node<br>Consul server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
-| db3 | PostgreSQL node<br>Patroni node<br>Consul server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>8500 (Consul) |
+| db1 | PostgreSQL node<br>Patroni node<br>etcd server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>2379 (etcd client)<br>2380 (etcd peer) |
+| db2 | PostgreSQL node<br>Patroni node<br>etcd server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>2379 (etcd client)<br>2380 (etcd peer) |
+| db3 | PostgreSQL node<br>Patroni node<br>etcd server | 5432 (PostgreSQL)<br>8008 (Patroni API)<br>2379 (etcd client)<br>2380 (etcd peer) |
 | proxy1 | HAProxy node<br>PgBouncer node<br>Keepalived MASTER<br>pgAdmin host | 5000 (HAProxy RW)<br>5001 (HAProxy RO)<br>5432 (PgBouncer)<br>80 (pgAdmin) |
 | proxy2 | HAProxy node<br>PgBouncer node<br>Keepalived BACKUP | 5000 (HAProxy RW)<br>5001 (HAProxy RO)<br>5432 (PgBouncer) |
 | VIP | Virtual IP – Managed by Keepalived | 5432 (PgBouncer)<br>5000 (HAProxy RW)<br>5001 (HAProxy RO) |
