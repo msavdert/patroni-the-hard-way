@@ -34,7 +34,7 @@ for host in db1 db2 db3; do
   cat << EOF | ssh root@${host} "cat > /etc/consul.d/consul.hcl"
 datacenter       = "dc1"
 node_name        = "${host}"
-bind_addr        = "${IP}"
+bind_addr        = "0.0.0.0"
 client_addr      = "0.0.0.0"
 data_dir        = "/opt/consul"
 log_level        = "INFO"

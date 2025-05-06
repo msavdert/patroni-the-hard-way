@@ -10,9 +10,8 @@ Install Patroni using `pip` along with necessary Python libraries for PostgreSQL
 
 ```bash
 for host in db1 db2 db3; do
-  ssh root@${host} "dnf install -y python3 python3-pip python3-psycopg2 gcc python3-devel libpq-devel"
-  ssh root@${host} "pip3 install --upgrade pip"
-  ssh root@${host} "pip3 install patroni[consul]"
+  ssh root@${host} "dnf install epel-release -y && \
+    dnf install -y patroni patroni-etcd"
 done
 ```
 
@@ -25,13 +24,6 @@ ssh root@db1 patroni --version
 
 Patroni uses a YAML configuration file. We will create a template and then generate a specific configuration for each node.
 
-Create the directory for Patroni configuration on each node:
-```bash
-for host in db1 db2 db3; do
-  ssh root@${host} "mkdir -p /etc/patroni"
-done
-```
-
 Now, create the configuration file (`/etc/patroni/patroni.yml`) on each node. This file tells Patroni how to connect to Consul, manage PostgreSQL, and expose its own API.
 
 ```bash
@@ -42,12 +34,14 @@ for host in db1 db2 db3; do
 cat << EOF | ssh root@${host} "cat > /etc/patroni/patroni.yml"
 scope: patroni-cluster
 namespace: /patroni/
-
 name: ${host}
 
 restapi:
-  listen: ${IP}:8008
+  listen: 0.0.0.0:8008
   connect_address: ${IP}:8008
+  authentication:
+    username: admin
+    password: StrongAdminPassword
 
 consul:
   host: 127.0.0.1
@@ -84,7 +78,7 @@ bootstrap:
         - replication
 
 postgresql:
-  listen: ${IP}:5432
+  listen: 0.0.0.0:5432
   connect_address: ${IP}:5432
   data_dir: /var/lib/pgsql/${PG_VERSION}/data
   bin_dir: /usr/pgsql-${PG_VERSION}/bin
@@ -97,7 +91,6 @@ postgresql:
       username: admin
       password: StrongAdminPassword
 EOF
-  ssh root@${host} "chown -R root:root /etc/patroni && chmod 600 /etc/patroni/patroni.yml"
 done
 ```
 

@@ -10,8 +10,7 @@ Run the following commands from the `jumpbox` to install PostgreSQL 17 and contr
 for host in db1 db2 db3; do
   ssh -n root@${host} "dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-aarch64/pgdg-redhat-repo-latest.noarch.rpm && \
     dnf -qy module disable postgresql && \
-    dnf install -y perl && \
-    dnf install -y postgresql17-server postgresql17-contrib postgresql17-devel"
+    dnf install -y postgresql17-server postgresql17-contrib"
 done
 ```
 
