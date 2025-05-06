@@ -29,6 +29,8 @@ Component versions:
 
 ## Cluster Topology
 
+![Cluster Topology](WithHaProxyKeepalived.png)
+
 The following table outlines the full cluster topology that will be built in this tutorial:
 
 | Hostname | Roles | Ports |
