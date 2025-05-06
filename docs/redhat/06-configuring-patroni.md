@@ -33,21 +33,18 @@ for host in db1 db2 db3; do
   IP=$(grep ${host} machines.txt | cut -d' ' -f1)
 cat << EOF | ssh root@${host} "cat > /etc/patroni/patroni.yml"
 scope: patroni-cluster
-namespace: /patroni/
+namespace: /service/
 name: ${host}
 
 restapi:
   listen: 0.0.0.0:8008
   connect_address: ${IP}:8008
-  authentication:
-    username: admin
-    password: StrongAdminPassword
 
-consul:
-  host: 127.0.0.1
-  port: 8500
-  register_service: true
-  protocol: http
+etcd3:
+    hosts:
+    - db1:2379
+    - db2:2379
+    - db3:2379
 
 bootstrap:
   dcs:
@@ -66,12 +63,10 @@ bootstrap:
     - encoding: UTF8
     - locale: en_US.UTF-8
     - data-checksums
+  pg_hba:
+  - host replication replicator 0.0.0.0/0 scram-sha-256
+  - host all all 0.0.0.0/0 scram-sha-256
   users:
-    admin:
-      password: StrongAdminPassword
-      options:
-        - createrole
-        - createdb
     replicator:
       password: StrongReplicationPassword
       options:
@@ -88,39 +83,20 @@ postgresql:
       username: replicator
       password: StrongReplicationPassword
     superuser:
-      username: admin
+      username: postgres
       password: StrongAdminPassword
+
+tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: false
+
 EOF
 done
 ```
 
 **Security Note:** The passwords in the configuration file are in plain text. In a production environment, consider using environment variables or a secrets management system to handle sensitive credentials.
-
-## 3. Create Patroni Systemd Service
-
-Create a systemd unit file to manage the Patroni service:
-
-```bash
-for host in db1 db2 db3; do
-cat << EOF | ssh root@${host} "cat > /etc/systemd/system/patroni.service"
-[Unit]
-Description=Patroni PostgreSQL High-Availability Manager
-After=network.target consul.service
-Requires=consul.service
-
-[Service]
-User=postgres
-Group=postgres
-ExecStart=/usr/local/bin/patroni /etc/patroni/patroni.yml
-Restart=on-failure
-KillMode=process
-TimeoutSec=30
-
-[Install]
-WantedBy=multi-user.target
-EOF
-done
-```
 
 ## 4. Enable Patroni Service
 

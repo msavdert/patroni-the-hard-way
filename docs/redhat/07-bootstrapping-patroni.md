@@ -21,7 +21,7 @@ for host in db1 db2 db3; do
   echo "Checking Patroni status on $host"
   ssh root@${host} "systemctl status patroni --no-pager | grep Active"
   echo "Checking PostgreSQL status on $host"
-  ssh root@${host} "systemctl status postgresql --no-pager | grep Active"
+  ssh root@${host} "systemctl status postgresql-17 --no-pager | grep Active"
 done
 ```
 
@@ -33,6 +33,8 @@ Check the cluster state using Patroni's REST API. You can run this from the `jum
 
 ```bash
 curl http://db1:8008/cluster
+
+ssh root@db1 "patronictl -c /etc/patroni/patroni.yml list"
 ```
 
 You should see JSON output showing the cluster members and their roles (one leader, two replicas).

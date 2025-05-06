@@ -14,7 +14,9 @@ Run the following commands from the `jumpbox` to install etcd on all nodes:
 
 ```bash
 for host in db1 db2 db3; do
-  ssh -n root@${host} "dnf install -y etcd"
+  ssh -n root@${host} "dnf install -y yum-utils && \
+    yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo && \
+    dnf -y install consul"
 done
 ```
 
