@@ -20,12 +20,10 @@ Verify that Patroni and PostgreSQL are running and healthy on all nodes:
 for host in db1 db2 db3; do
   echo "Checking Patroni status on $host"
   ssh root@${host} "systemctl status patroni --no-pager | grep Active"
-  echo "Checking PostgreSQL status on $host"
-  ssh root@${host} "systemctl status postgresql-17 --no-pager | grep Active"
 done
 ```
 
-You should see `active (running)` for both Patroni and PostgreSQL services on each node.
+You should see `active (running)` for the Patroni service on each node.
 
 ## 3. Verify Cluster State
 
