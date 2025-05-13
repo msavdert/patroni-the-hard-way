@@ -1,0 +1,94 @@
+Vagrant.configure("2") do |config|
+  # Oracle Linux 9 box from official Oracle Vagrant boxes
+  config.vm.box = "oraclelinux/9"
+  config.vm.box_url = "https://oracle.github.io/vagrant-projects/boxes/oraclelinux/9.json"
+
+  # Disable checking for GuestAdditions and shared folders
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false
+    config.vbguest.no_remote = true
+  end
+  
+  # Disable all shared folders globally
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+  config.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
+  
+  # Basic VirtualBox configuration
+  config.vm.provider "virtualbox" do |vb|
+    vb.customize ["modifyvm", :id, "--audio", "none"]
+  end
+
+  # Provisioning script to enable root login and set root password
+  config.vm.provision "shell", inline: <<-SHELL
+
+    # Enable root SSH login
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+    
+    # Set root password
+    echo "root:root" | chpasswd
+
+    # Make sure all network interfaces are up and configured
+    for iface in $(ls -1 /sys/class/net/ | grep -v lo); do
+      echo "Configuring interface $iface"
+      # Set interface to use DHCP if it's not already configured
+      if ! grep -q "IPADDR" /etc/sysconfig/network-scripts/ifcfg-$iface 2>/dev/null; then
+        cat > /etc/sysconfig/network-scripts/ifcfg-$iface <<EOF
+DEVICE=$iface
+BOOTPROTO=dhcp
+ONBOOT=yes
+NM_CONTROLLED=yes
+EOF
+      fi
+    done
+
+    # Restart network service to apply changes
+    systemctl restart NetworkManager
+    systemctl restart network.service 2>/dev/null || true
+
+    # Restart SSH service
+    systemctl restart sshd
+  SHELL
+
+  # 3 DB nodes for PostgreSQL and Patroni
+  (1..3).each do |i|
+    config.vm.define "db#{i}" do |node|
+      node.vm.hostname = "db#{i}"
+      # Only bridged network for direct access from host network - automatically use en0: Wi-Fi
+      node.vm.network "public_network", bridge: "en0: Wi-Fi", auto_config: true
+      
+      # Disable shared folders explicitly for this VM
+      node.vm.synced_folder ".", "/vagrant", disabled: true
+      node.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
+      
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = 2048
+        vb.cpus = 1
+        vb.name = "db#{i}"
+        # Disable Guest Additions functionality
+        vb.check_guest_additions = false
+      end
+    end
+  end
+
+  # 2 proxy nodes for HAProxy and Keepalived
+  (1..2).each do |i|
+    config.vm.define "proxy#{i}" do |node|
+      node.vm.hostname = "proxy#{i}"
+      # Only bridged network for direct access from host network - automatically use en0: Wi-Fi
+      node.vm.network "public_network", bridge: "en0: Wi-Fi", auto_config: true
+      
+      # Disable shared folders explicitly for this VM
+      node.vm.synced_folder ".", "/vagrant", disabled: true
+      node.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
+      
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = 2048  # Setting to 2048MB as requested
+        vb.cpus = 1
+        vb.name = "proxy#{i}"
+        # Disable Guest Additions functionality
+        vb.check_guest_additions = false
+      end
+    end
+  end
+end
